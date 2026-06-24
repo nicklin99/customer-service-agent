@@ -51,22 +51,7 @@ export default function ChatWidget({ messages, isStreaming, onSend, onStop }: Pr
         <div ref={bottomRef} />
       </div>
 
-      {/* 快捷引导 */}
-      {messages.length <= 1 && !isStreaming && (
-        <div className="flex flex-wrap gap-2 mb-3">
-          {['建站服务有哪些方案？', 'SEO 优化怎么收费？', '我想做一个电商网站', 'AI 智能客服能做什么？'].map(
-            (q) => (
-              <button
-                key={q}
-                onClick={() => onSend(q)}
-                className="px-3 py-1.5 text-xs bg-white border border-gray-200 rounded-full text-gray-600 hover:border-gold hover:text-gold transition-colors"
-              >
-                {q}
-              </button>
-            ),
-          )}
-        </div>
-      )}
+      {/* 快捷引导（预留） */}
 
       {/* 输入区 */}
       <div className="border border-gray-200 rounded-xl bg-white shadow-sm">
