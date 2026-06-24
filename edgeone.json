@@ -1,0 +1,45 @@
+{
+  "name": "customer-service-agent",
+  "version": "1.0.0",
+  "framework": "deepagents",
+  "runtime": "python",
+  "functions": {
+    "chat": {
+      "path": "/chat",
+      "method": "POST",
+      "timeout": 600,
+      "memory": 512
+    },
+    "stop": {
+      "path": "/stop",
+      "method": "POST",
+      "timeout": 30,
+      "memory": 256
+    }
+  },
+  "cloudFunctions": {
+    "crm-sync": {
+      "path": "/crm-sync",
+      "method": "POST",
+      "timeout": 30,
+      "memory": 256
+    },
+    "leads": {
+      "path": "/leads",
+      "method": "POST",
+      "timeout": 30,
+      "memory": 256
+    },
+    "profile": {
+      "path": "/profile",
+      "method": "POST",
+      "timeout": 30,
+      "memory": 256
+    }
+  },
+  "env": {
+    "AI_GATEWAY_MODEL": "@makers/deepseek-v4-flash",
+    "CRM_API_ENDPOINT": "",
+    "CRM_API_KEY": ""
+  }
+}
