@@ -126,7 +126,7 @@ async def _sync_msg(token: str, open_kfid: str) -> list[dict]:
     cursor_key = f"wecom_kf_cursor:{open_kfid}"
     cursor = ""
     try:
-        stored = await agent.store.get(cursor_key)
+        stored = agent.store.get(cursor_key)
         cursor = stored or ""
     except Exception:
         pass
@@ -150,7 +150,7 @@ async def _sync_msg(token: str, open_kfid: str) -> list[dict]:
             if not data.get("has_more"):
                 if msgs and next_cursor:
                     try:
-                        await agent.store.set(cursor_key, next_cursor)
+                        agent.store.set(cursor_key, next_cursor)
                     except Exception as e:
                         logger.warning("保存 cursor 失败: %s", e)
                 break
@@ -206,7 +206,7 @@ async def _send_welcome_msg(welcome_code: str, content: str) -> bool:
 
 async def _get_channel_state(external_userid: str) -> str:
     try:
-        return await agent.store.get(f"wecom_kf_channel:{external_userid}") or ""
+        return agent.store.get(f"wecom_kf_channel:{external_userid}") or ""
     except Exception:
         return ""
 
@@ -261,7 +261,7 @@ def _build_conversation_messages(history: list[dict]) -> list[dict]:
 async def _load_history(external_userid: str) -> list[dict]:
     store_key = f"wecom_kf:{external_userid}"
     try:
-        stored = await agent.store.get(store_key)
+        stored = agent.store.get(store_key)
         return json.loads(stored) if stored else []
     except Exception:
         return []
@@ -271,7 +271,7 @@ async def _save_to_history(external_userid: str, role: str, content: str) -> Non
     history = await _load_history(external_userid)
     history.append({"role": role, "content": content, "time": int(time.time())})
     try:
-        await agent.store.set(
+        agent.store.set(
             f"wecom_kf:{external_userid}",
             json.dumps(history[-40:], ensure_ascii=False),
         )
@@ -381,7 +381,7 @@ async def receive_callback(request: Request):
             logger.info("新客户添加: %s, state=%s", external_userid, state)
             if external_userid and state:
                 try:
-                    await agent.store.set(f"wecom_kf_channel:{external_userid}", state)
+                    agent.store.set(f"wecom_kf_channel:{external_userid}", state)
                 except Exception as e:
                     logger.warning("保存渠道 state 失败: %s", e)
             if welcome_code:
@@ -401,7 +401,7 @@ async def receive_callback(request: Request):
 
     processed_key = f"wecom_kf_processed:{open_kfid}"
     try:
-        stored = await agent.store.get(processed_key)
+        stored = agent.store.get(processed_key)
         processed_ids: set[str] = set(json.loads(stored)) if stored else set()
     except Exception:
         processed_ids = set()
@@ -449,7 +449,7 @@ async def receive_callback(request: Request):
         processed_ids.update(batch_msgids)
         trimmed = list(processed_ids)[-500:]
         try:
-            await agent.store.set(processed_key, json.dumps(trimmed))
+            agent.store.set(processed_key, json.dumps(trimmed))
         except Exception as e:
             logger.warning("保存 processed_ids 失败: %s", e)
 
@@ -467,7 +467,7 @@ async def get_profile(request: Request):
     if not conversation_id:
         return JSONResponse({"error": "缺少 conversation_id"}, status_code=400)
     try:
-        messages = await agent.store.get_messages(conversation_id)
+        messages = agent.store.get_messages(conversation_id)
         if not messages:
             return {"profile": None, "message": "该会话暂无消息记录"}
         return {
@@ -526,10 +526,10 @@ async def get_leads(request: Request):
     action = body.get("action", "list")
     if action == "list":
         try:
-            conversations = await agent.store.list_conversations()
+            conversations = agent.store.list_conversations()
             leads = []
             for conv in conversations:
-                messages = await agent.store.get_messages(conv.get("id", ""))
+                messages = agent.store.get_messages(conv.get("id", ""))
                 lead_info = _extract_lead_from_messages(messages)
                 if lead_info:
                     leads.append({
@@ -545,7 +545,7 @@ async def get_leads(request: Request):
         if not conversation_id:
             return JSONResponse({"error": "缺少 conversation_id"}, status_code=400)
         try:
-            messages = await agent.store.get_messages(conversation_id)
+            messages = agent.store.get_messages(conversation_id)
             lead_info = _extract_lead_from_messages(messages)
             return {
                 "conversation_id": conversation_id,
