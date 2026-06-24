@@ -22,7 +22,7 @@ async def handler(context):
     if not crm_endpoint:
         return {"status_code": 500, "body": {"error": "CRM_API_ENDPOINT 未配置"}}
 
-    body = context.request.body or {}
+    body = context.body or {}
     lead = body.get("lead", {})
     default_source = context.env.get("DEFAULT_SOURCE", os.environ.get("DEFAULT_SOURCE", "trendee-智能客服"))
 
@@ -39,8 +39,7 @@ async def handler(context):
             "company": lead.get("company", ""),
             "position": lead.get("position", ""),
             "needs": lead.get("needs", ""),
-            "budget": lead.get("budget", ""),
-            "timeline": lead.get("timeline", ""),
+            "website": lead.get("website", ""),
         },
         "profile": body.get("profile", {}),
         "source": body.get("source", default_source),

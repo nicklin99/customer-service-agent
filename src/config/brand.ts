@@ -25,7 +25,7 @@ export const defaultBrand: BrandConfig = {
   agentName: 'trendee',
   logoText: 'T',
   welcomeMessage:
-    '您好！我是 trendee，trendee 的智能顾问 ☀️\n\n无论您是想了解我们的建站服务、SEO 优化、品牌设计，还是 AI 解决方案，我都可以为您解答。请问有什么可以帮您的？',
+    '您好！我是 trendee，trendee 的智能顾问 ☀️\n\n请问有什么可以帮您的？',
   footerText: 'trendee · 智能客服系统',
   defaultSource: 'trendee-智能客服',
   placeholder: '输入您的问题，trendee 随时为您解答...',

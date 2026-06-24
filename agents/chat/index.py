@@ -54,8 +54,8 @@ SYSTEM_PROMPT = f"""你是一位专业、热情、自然的智能客服代表，
 - 不要一上来就索要联系方式，那会吓跑客户
 - 在对话中自然过渡到线索收集
 
-### 2. 线索识别与收集
-当对话中出现以下信号时，你应该自然地收集线索信息：
+### 2. 线索识别与主动收集
+当客户表达需求时，应立即识别为新线索，主动自然地收集线索信息：
 - 客户询问价格、产品功能、方案对比
 - 客户表示有采购意向或项目需求
 - 客户询问合作流程、实施周期
@@ -64,11 +64,13 @@ SYSTEM_PROMPT = f"""你是一位专业、热情、自然的智能客服代表，
 
 收集线索时使用 `collect_lead` 工具。该工具会验证信息完整性，不够的信息会返回缺失字段列表，你需要继续追问补齐。
 
-### 3. 用户画像分析
-当收集到足够信息后，使用 `analyze_user_profile` 工具分析客户画像。该工具**无需任何参数**，会自动读取对话历史进行分析。
+线索字段包括：姓名、电话、邮箱、公司名称、职位、需求描述、官方网址（选填）、来源。预算和时间线不再收集。
+
+### 3. 用户画像自动补齐
+线索收集完整后，自动使用 `analyze_user_profile` 工具分析客户画像，根据已收集线索自动补齐基础画像信息。该工具**无需任何参数**，会自动读取对话历史进行分析。
 
 ### 4. CRM 同步
-当线索收集完整且用户画像已分析后，使用 `save_to_crm` 工具将线索同步到 CRM 系统。该工具**无需任何参数**，会自动提取最近的线索和画像数据。同步成功后告知客户后续会有专人联系。
+当线索收集完整且用户画像已分析后，如果 CRM 工具可用，使用 `save_to_crm` 工具将客户线索、用户画像和对话 ID 提交到 CRM 系统。该工具**无需任何参数**，会自动提取最近的线索和画像数据。同步成功后告知客户后续会有专人联系。
 
 ## 不要做的事情
 - 不要编造你没有的产品信息
@@ -95,8 +97,7 @@ def collect_lead(
     position: str = "",
     needs: str = "",
     source: str = _default_source(),
-    budget: str = "",
-    timeline: str = "",
+    website: str = "",
 ) -> str:
     """
     收集客户线索信息。当你识别到潜在客户信号时调用此工具。
@@ -110,8 +111,7 @@ def collect_lead(
         position: 职位
         needs: 需求描述（越详细越好）
         source: 线索来源
-        budget: 预算范围
-        timeline: 预期时间线
+        website: 官方网址（选填）
     """
     lead = {
         "name": name.strip(),
@@ -121,8 +121,7 @@ def collect_lead(
         "position": position.strip(),
         "needs": needs.strip(),
         "source": source.strip(),
-        "budget": budget.strip(),
-        "timeline": timeline.strip(),
+        "website": website.strip(),
     }
 
     required = {"name": "姓名", "phone": "电话", "email": "邮箱", "needs": "需求描述"}
@@ -134,7 +133,7 @@ def collect_lead(
     suggested = []
     suggested_fields = {
         "company": "公司名称", "position": "职位",
-        "budget": "预算范围", "timeline": "预期时间线",
+        "website": "官方网址",
     }
     for field, label in suggested_fields.items():
         if not lead.get(field):
@@ -390,7 +389,7 @@ async def handler(context):
     - chat → 返回 SSE 流
     """
     conversation_id = context.conversation_id
-    body = context.request.body or {}
+    body = context.body or {}
     action = body.get("action", "chat")
     message = body.get("message", "")
 

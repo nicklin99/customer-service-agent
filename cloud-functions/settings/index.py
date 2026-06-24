@@ -18,7 +18,7 @@ async def handler(request):
         "logoText": os.environ.get("LOGO_TEXT", "T"),
         "welcomeMessage": os.environ.get(
             "WELCOME_MESSAGE",
-            "您好！我是 trendee，trendee 的智能顾问 ☀️\n\n无论您是想了解我们的建站服务、SEO 优化、品牌设计，还是 AI 解决方案，我都可以为您解答。请问有什么可以帮您的？",
+            "您好！我是 trendee，trendee 的智能顾问 ☀️\n\n请问有什么可以帮您的？",
         ),
         "footerText": os.environ.get("FOOTER_TEXT", "trendee · 智能客服系统"),
         "defaultSource": os.environ.get("DEFAULT_SOURCE", "trendee-智能客服"),

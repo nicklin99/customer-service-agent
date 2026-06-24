@@ -9,7 +9,7 @@ logger = logging.getLogger("leads-query")
 
 async def handler(context):
     """POST /leads"""
-    body = context.request.body or {}
+    body = context.body or {}
     action = body.get("action", "list")
 
     if action == "list":

@@ -2,6 +2,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import remarkBreaks from 'remark-breaks'
 import type { ChatMessage } from '../api'
+import AiSparkle from './AiSparkle'
 
 interface Props {
   message: ChatMessage
@@ -25,13 +26,13 @@ export default function ChatMessageView({ message }: Props) {
     <div className={`flex gap-3 ${isUser ? 'flex-row-reverse' : ''}`}>
       {/* 头像 */}
       <div
-        className={`w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center text-xs font-bold ${
+        className={`w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center ${
           isUser
-            ? 'bg-gold text-white'
-            : 'bg-primary text-gold'
+            ? 'bg-gold text-white text-xs font-bold'
+            : 'bg-white border border-gray-200 text-gold'
         }`}
       >
-        {isUser ? '我' : '星'}
+        {isUser ? '我' : <AiSparkle className="w-5 h-5" />}
       </div>
 
       {/* 消息气泡 */}

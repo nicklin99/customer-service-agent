@@ -9,7 +9,7 @@ logger = logging.getLogger("profile-query")
 
 async def handler(context):
     """POST /profile"""
-    body = context.request.body or {}
+    body = context.body or {}
     conversation_id = body.get("conversation_id", "")
     if not conversation_id:
         return {"status_code": 400, "body": {"error": "缺少 conversation_id"}}
