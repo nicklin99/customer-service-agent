@@ -139,7 +139,8 @@ export async function getHistory(conversationId: string): Promise<ChatMessage[]>
     body: JSON.stringify({ action: 'history' }),
   })
   const data = await resp.json()
-  return data.messages || []
+  const body = data.body || data
+  return body.messages || []
 }
 
 // ── 查询线索 ─────────────────────────────────────
@@ -151,7 +152,8 @@ export async function getLeads(): Promise<any[]> {
     body: JSON.stringify({ action: 'list' }),
   })
   const data = await resp.json()
-  return data.leads || []
+  const body = data.body || data
+  return body.leads || []
 }
 
 // ── 查询用户画像 ─────────────────────────────────
@@ -165,7 +167,8 @@ export async function getProfile(conversationId: string): Promise<{
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ conversation_id: conversationId }),
   })
-  return resp.json()
+  const data = await resp.json()
+  return data.body || data
 }
 
 // ── 工具函数 ─────────────────────────────────────

@@ -1,18 +1,12 @@
 """
 智能客服 DeepAgent — 线索收集 · 用户画像 · CRM 同步
-基于 EdgeOne Makers Agent Runtime + DeepAgents (LangGraph)
-
-v2 修订：
-- analyze_user_profile 自动从 checkpointer 拉取对话历史，LLM 无参调用
-- save_to_crm 自动从 checkpointer 提取线索+画像，LLM 无参调用
-- collect_lead 返回 suggested_labels
-- _handle_action 直接用 checkpointer，不创建空 agent
+EdgeOne Makers Agent Runtime + DeepAgents (LangGraph)
 """
 
+import asyncio
 import json
-import os
 import logging
-from typing import Any
+import os
 
 import httpx
 from deepagents import create_deep_agent
@@ -21,32 +15,8 @@ from langchain_openai import ChatOpenAI
 
 logger = logging.getLogger("customer-service-agent")
 
-# ── 工具运行时状态（闭包捕获）──────────────────────────────
-# 存储当前 agent 实例和 config，供工具读取 checkpointer
+# 全局单例
 _agent_state: dict = {}
-
-
-def _set_agent_state(agent: Any, config: dict) -> None:
-    _agent_state["agent"] = agent
-    _agent_state["config"] = config
-
-
-# ── 模型配置 ──────────────────────────────────────────────
-
-def _build_model(context: Any) -> ChatOpenAI:
-    api_key = context.env.get("AI_GATEWAY_API_KEY", "")
-    base_url = context.env.get(
-        "AI_GATEWAY_BASE_URL", "https://ai-gateway.edgeone.link/v1"
-    )
-    model_name = context.env.get("AI_GATEWAY_MODEL", "@makers/deepseek-v4-flash")
-    return ChatOpenAI(
-        model=model_name,
-        api_key=api_key,
-        base_url=base_url,
-        temperature=0.7,
-        streaming=True,
-    )
-
 
 # ── 系统提示词 ────────────────────────────────────────────
 
@@ -171,7 +141,7 @@ def collect_lead(
     }, ensure_ascii=False)
 
 
-# ── 工具：用户画像分析（无参，自动读对话历史）─────────────
+# ── 工具：用户画像分析 ────────────────────────────────────
 
 async def analyze_user_profile() -> str:
     """
@@ -180,12 +150,10 @@ async def analyze_user_profile() -> str:
     **无需传入任何参数**，工具自动读取对话记录。
     """
     context = _agent_state.get("context")
-    if not context:
-        return json.dumps({"error": "Agent 状态丢失，请重试"}, ensure_ascii=False)
+    model = _agent_state.get("model")
+    if not context or not model:
+        return json.dumps({"error": "Agent 状态丢失"}, ensure_ascii=False)
 
-    model = _build_model(context)
-
-    # 从 checkpointer 拉取对话历史
     conversation_text = await _read_conversation_text()
 
     analysis_prompt = f"""基于以下客服对话记录，分析客户画像。输出 JSON 格式。
@@ -223,17 +191,17 @@ async def analyze_user_profile() -> str:
         }, ensure_ascii=False)
 
 
-# ── 工具：CRM 同步（无参，自动提取线索和画像）─────────────
+# ── 工具：CRM 同步 ────────────────────────────────────────
 
 async def save_to_crm() -> str:
     """
     将客户线索保存到 CRM 系统。
     仅在 collect_lead 返回 complete 且 analyze_user_profile 已完成后调用。
-    **无需传入任何参数**，工具自动提取最近的线索和画像数据。
+    **无需传入任何参数**，工具自动提取线索和画像数据。
     """
     context = _agent_state.get("context")
     if not context:
-        return json.dumps({"error": "Agent 状态丢失，请重试"}, ensure_ascii=False)
+        return json.dumps({"error": "Agent 状态丢失"}, ensure_ascii=False)
 
     crm_endpoint = context.env.get(
         "CRM_API_ENDPOINT", os.environ.get("CRM_API_ENDPOINT", ""),
@@ -249,15 +217,16 @@ async def save_to_crm() -> str:
             "note": "线索信息已保留在对话记录中，不会丢失。",
         }, ensure_ascii=False)
 
-    # 从 checkpointer 提取最近的工具调用结果
     lead_data = {}
     profile_data = {}
-    conversation_id = _agent_state.get("config", {}).get("configurable", {}).get("thread_id", "")
+    conversation_id = context.conversation_id or ""
 
+    # 从 checkpointer 提取最近的工具调用结果
     try:
         agent = _agent_state.get("agent")
-        if agent:
-            state = await agent.aget_state(_agent_state["config"])
+        config = _agent_state.get("config")
+        if agent and config:
+            state = await agent.aget_state(config)
             if state and state.values:
                 for msg in reversed(state.values.get("messages", [])):
                     content = getattr(msg, "content", "")
@@ -278,7 +247,7 @@ async def save_to_crm() -> str:
                     if lead_data and profile_data:
                         break
     except Exception as e:
-        logger.warning(f"Failed to extract lead from state: {e}")
+        logger.warning(f"Failed to extract from state: {e}")
 
     payload = {
         "lead": lead_data,
@@ -315,10 +284,9 @@ async def save_to_crm() -> str:
         }, ensure_ascii=False)
 
 
-# ── 辅助：从 checkpointer 读取对话历史 ────────────────────
+# ── 辅助 ──────────────────────────────────────────────────
 
 async def _read_conversation_text() -> str:
-    """从 checkpointer 读取当前会话的完整对话历史"""
     try:
         agent = _agent_state.get("agent")
         config = _agent_state.get("config", {})
@@ -336,63 +304,27 @@ async def _read_conversation_text() -> str:
     return "（无法读取对话历史）"
 
 
-# ── 内部：非流式 Action 处理 ──────────────────────────────
+async def _read_history(state) -> list:
+    """从 state 提取历史消息"""
+    items = []
+    if state and state.values:
+        for msg in state.values.get("messages", []):
+            items.append({
+                "role": getattr(msg, "type", "unknown"),
+                "content": getattr(msg, "content", ""),
+            })
+    return items
 
 
-async def _handle_action(context: Any, action: str) -> dict:
-    """处理 history / delete，直接操作 checkpointer"""
-    conversation_id = getattr(context, "conversation_id", "default")
-    checkpointer = context.store.langgraph_checkpointer()
+# ── SSE 事件流 ────────────────────────────────────────────
+
+async def _event_stream(agent, message: str, conversation_id: str, utils):
+    """SSE 流式生成器。使用 context.utils.sse 发送事件。"""
     config = {"configurable": {"thread_id": conversation_id}}
-
-    if action == "history":
-        try:
-            checkpoint = await checkpointer.aget(config)
-            messages = []
-            if checkpoint and "channel_values" in checkpoint:
-                for msg in checkpoint["channel_values"].get("messages", []):
-                    messages.append({
-                        "role": getattr(msg, "type", "unknown"),
-                        "content": getattr(msg, "content", ""),
-                    })
-            return {"messages": messages}
-        except Exception:
-            return {"messages": []}
-
-    elif action == "delete":
-        try:
-            await context.store.delete(conversation_id)
-            return {"status": "deleted"}
-        except Exception as e:
-            return {"status": "error", "message": str(e)}
-
-    return {"error": f"Unknown action: {action}"}
-
-
-# ── 内部：SSE 流式聊天生成器 ──────────────────────────────
-
-
-async def _stream_chat(context: Any, body: dict):
-    """异步生成器：逐 token 流式输出 DeepAgent 响应"""
-    user_message = body.get("message", "")
-    conversation_id = getattr(context, "conversation_id", "default")
-    model = _build_model(context)
-    config = {"configurable": {"thread_id": conversation_id}}
-
-    agent = create_deep_agent(
-        model=model,
-        system_prompt=SYSTEM_PROMPT,
-        tools=[collect_lead, analyze_user_profile, save_to_crm],
-        checkpointer=context.store.langgraph_checkpointer(),
-    )
-
-    # 存储 agent 引用供工具读取状态
-    _set_agent_state(agent, config)
-    _agent_state["context"] = context
 
     try:
         async for event in agent.astream_events(
-            {"messages": [HumanMessage(content=user_message)]},
+            {"messages": [HumanMessage(content=message)]},
             config=config,
             version="v2",
         ):
@@ -401,49 +333,98 @@ async def _stream_chat(context: Any, body: dict):
             if kind == "on_chat_model_stream":
                 chunk = event["data"]["chunk"]
                 if hasattr(chunk, "content") and chunk.content:
-                    yield {"type": "text_delta", "content": chunk.content}
+                    utils.sse({
+                        "type": "text_delta",
+                        "content": chunk.content,
+                    })
 
             elif kind == "on_tool_start":
-                yield {
+                utils.sse({
                     "type": "tool_called",
                     "tool_name": event.get("name", "unknown"),
                     "status": "started",
-                }
+                })
 
             elif kind == "on_tool_end":
                 output = event.get("data", {}).get("output", "")
-                yield {
+                utils.sse({
                     "type": "tool_result",
                     "tool_name": event.get("name", "unknown"),
                     "status": "completed",
                     "output": str(output)[:500],
-                }
+                })
 
-        yield {"type": "done", "conversation_id": conversation_id}
+        utils.sse({"type": "done", "conversation_id": conversation_id})
 
     except Exception as e:
         logger.error(f"Agent stream error: {e}")
-        yield {"type": "error", "message": f"处理请求时出错: {str(e)}"}
-    finally:
-        _agent_state.clear()
+        utils.sse({"type": "error", "message": str(e)})
 
 
 # ── 主 Handler ────────────────────────────────────────────
 
-
-async def main(context: Any) -> Any:
+async def handler(context):
     """
-    EdgeOne Makers Agent 主入口。
-    - history / delete → 返回 dict（JSON 响应）
-    - chat → 返回 async generator（SSE 流式响应）
+    EdgeOne Makers Agent handler（函数名必须为 handler）。
+    - history / delete → 返回 status_code + body
+    - chat → 返回 SSE 流
     """
-    body = await context.request.json()
+    conversation_id = context.conversation_id
+    body = context.request.body or {}
     action = body.get("action", "chat")
+    message = body.get("message", "")
 
-    if action in ("history", "delete"):
-        return await _handle_action(context, action)
+    # 环境变量
+    api_key = (context.env.get("AI_GATEWAY_API_KEY") or "").strip()
+    base_url = (context.env.get("AI_GATEWAY_BASE_URL") or "").strip()
+    model_name = context.env.get("AI_GATEWAY_MODEL") or "@makers/deepseek-v4-flash"
 
-    return _stream_chat(context, body)
+    if not api_key or not base_url:
+        return {
+            "status_code": 500,
+            "body": {"error": "Missing AI_GATEWAY_API_KEY or AI_GATEWAY_BASE_URL"},
+        }
 
+    model = ChatOpenAI(
+        model=model_name,
+        api_key=api_key,
+        base_url=base_url,
+        temperature=0.7,
+        streaming=True,
+    )
 
-__all__ = ["main"]
+    checkpointer = context.store.langgraph_checkpointer()
+    config = {"configurable": {"thread_id": conversation_id}}
+
+    agent = create_deep_agent(
+        model=model,
+        system_prompt=SYSTEM_PROMPT,
+        tools=[collect_lead, analyze_user_profile, save_to_crm],
+        checkpointer=checkpointer,
+    )
+
+    # 存储状态供工具使用
+    _agent_state["agent"] = agent
+    _agent_state["model"] = model
+    _agent_state["config"] = config
+    _agent_state["context"] = context
+
+    # history
+    if action == "history":
+        state = await agent.aget_state(config)
+        items = await _read_history(state)
+        return {"status_code": 200, "body": {"messages": items}}
+
+    # delete
+    if action == "delete":
+        try:
+            await context.store.delete(conversation_id)
+            return {"status_code": 200, "body": {"deleted": True}}
+        except Exception as e:
+            return {"status_code": 500, "body": {"error": str(e)}}
+
+    # chat — SSE 流
+    async def gen():
+        await _event_stream(agent, message, conversation_id, context.utils)
+
+    return context.utils.stream_sse(gen())
