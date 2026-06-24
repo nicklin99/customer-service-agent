@@ -78,12 +78,7 @@ SYSTEM_PROMPT = f"""你是一位专业、热情、自然的智能客服代表，
 - 不要在没有线索信号时强行收集信息
 - 不要一次性问太多问题
 
-## 可用的产品线（供参考回答客户问题）
-- 建站服务：企业官网、电商网站、小程序
-- SEO 优化：搜索引擎优化、内容策略
-- 品牌设计：VI 设计、品牌策略
-- AI 解决方案：智能客服、数据分析、流程自动化
-- 日常托管：网站运维、内容更新（400 元/月起）
+
 """
 
 
@@ -389,7 +384,7 @@ async def handler(context):
     - chat → 返回 SSE 流
     """
     conversation_id = context.conversation_id
-    body = context.body or {}
+    body = context.request.body or {}
     action = body.get("action", "chat")
     message = body.get("message", "")
 
