@@ -413,7 +413,7 @@ async def handler(context):
         streaming=True,
     )
 
-    checkpointer = context.store.langgraph_checkpointer()
+    checkpointer = context.store.langgraph_checkpointer
     config = {"configurable": {"thread_id": conversation_id}}
 
     agent = create_deep_agent(
