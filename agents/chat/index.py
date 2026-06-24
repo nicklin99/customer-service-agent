@@ -338,8 +338,8 @@ async def _read_history(state) -> list:
 
 # ── SSE 事件流 ────────────────────────────────────────────
 
-async def _event_stream(agent, message: str, conversation_id: str, utils):
-    """SSE 流式生成器。使用 context.utils.sse 发送事件。"""
+async def _event_stream(agent, message: str, conversation_id: str):
+    """SSE 事件异步生成器。yield 事件 dict，由 stream_sse 自动发送。"""
     config = {"configurable": {"thread_id": conversation_id}}
 
     try:
@@ -353,32 +353,32 @@ async def _event_stream(agent, message: str, conversation_id: str, utils):
             if kind == "on_chat_model_stream":
                 chunk = event["data"]["chunk"]
                 if hasattr(chunk, "content") and chunk.content:
-                    utils.sse({
+                    yield {
                         "type": "text_delta",
                         "content": chunk.content,
-                    })
+                    }
 
             elif kind == "on_tool_start":
-                utils.sse({
+                yield {
                     "type": "tool_called",
                     "tool_name": event.get("name", "unknown"),
                     "status": "started",
-                })
+                }
 
             elif kind == "on_tool_end":
                 output = event.get("data", {}).get("output", "")
-                utils.sse({
+                yield {
                     "type": "tool_result",
                     "tool_name": event.get("name", "unknown"),
                     "status": "completed",
                     "output": str(output)[:500],
-                })
+                }
 
-        utils.sse({"type": "done", "conversation_id": conversation_id})
+        yield {"type": "done", "conversation_id": conversation_id}
 
     except Exception as e:
         logger.error(f"Agent stream error: {e}")
-        utils.sse({"type": "error", "message": str(e)})
+        yield {"type": "error", "message": str(e)}
 
 
 # ── 主 Handler ────────────────────────────────────────────
@@ -444,7 +444,4 @@ async def handler(context):
             return {"status_code": 500, "body": {"error": str(e)}}
 
     # chat — SSE 流
-    async def gen():
-        await _event_stream(agent, message, conversation_id, context.utils)
-
-    return context.utils.stream_sse(gen())
+    return context.utils.stream_sse(_event_stream(agent, message, conversation_id))
