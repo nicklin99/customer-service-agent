@@ -24,6 +24,7 @@ async def handler(context):
 
     body = context.request.body or {}
     lead = body.get("lead", {})
+    default_source = context.env.get("DEFAULT_SOURCE", os.environ.get("DEFAULT_SOURCE", "trendee-智能客服"))
 
     required_fields = ["name", "phone", "email"]
     missing = [f for f in required_fields if not lead.get(f)]
@@ -42,7 +43,7 @@ async def handler(context):
             "timeline": lead.get("timeline", ""),
         },
         "profile": body.get("profile", {}),
-        "source": body.get("source", "智能客服"),
+        "source": body.get("source", default_source),
         "conversation_id": body.get("conversation_id", ""),
     }
 

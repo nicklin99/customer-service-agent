@@ -1,4 +1,5 @@
 import type { LeadData, ProfileData } from '../api'
+import { useBrand } from '../context/BrandContext'
 
 interface Props {
   profileData: ProfileData | null
@@ -22,6 +23,7 @@ const URGENCY_COLORS: Record<string, string> = {
 }
 
 export default function ProfilePanel({ profileData, leadData, conversationId, onRefresh }: Props) {
+  const brand = useBrand()
   const profile = profileData
 
   if (!profile && !leadData) {
@@ -30,7 +32,7 @@ export default function ProfilePanel({ profileData, leadData, conversationId, on
         <div className="text-4xl mb-4">📊</div>
         <h3 className="text-lg font-semibold text-gray-700 mb-2">暂无用户画像</h3>
         <p className="text-sm text-gray-500 mb-4">
-          与小星对话过程中，AI 会自动分析客户特征并生成画像。
+          与{brand.agentName}对话过程中，AI 会自动分析客户特征并生成画像。
           <br />
           请先完成一轮对话，收集到基础线索后画像将自动生成。
         </p>
@@ -132,7 +134,7 @@ export default function ProfilePanel({ profileData, leadData, conversationId, on
             </div>
           ) : (
             <div className="text-sm text-gray-400 text-center py-8">
-              画像分析尚未完成，请继续与小星对话
+              画像分析尚未完成，请继续与{brand.agentName}对话
             </div>
           )}
         </div>

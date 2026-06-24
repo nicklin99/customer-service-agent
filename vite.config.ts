@@ -10,6 +10,7 @@ export default defineConfig({
       '/crm-sync': 'http://localhost:8080',
       '/leads': 'http://localhost:8080',
       '/profile': 'http://localhost:8080',
+      '/settings': 'http://localhost:8080',
     },
   },
 })

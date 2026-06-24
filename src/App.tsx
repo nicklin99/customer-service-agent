@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import ChatWidget from './components/ChatWidget'
 import LeadForm from './components/LeadForm'
 import ProfilePanel from './components/ProfilePanel'
+import { BrandProvider, useBrand } from './context/BrandContext'
 import {
   streamChat,
   stopGeneration,
@@ -15,7 +16,8 @@ import {
 
 type Panel = 'chat' | 'lead' | 'profile'
 
-export default function App() {
+function AppContent() {
+  const brand = useBrand()
   const [conversationId] = useState(() => {
     const saved = sessionStorage.getItem('cs_conversation_id')
     if (saved) return saved
@@ -28,8 +30,7 @@ export default function App() {
     {
       id: 'welcome',
       role: 'assistant',
-      content:
-        '您好！我是小星，星帆科技的智能顾问 ☀️\n\n无论您是想了解我们的建站服务、SEO 优化、品牌设计，还是 AI 解决方案，我都可以为您解答。请问有什么可以帮您的？',
+      content: brand.welcomeMessage,
       timestamp: Date.now(),
     },
   ])
@@ -45,7 +46,6 @@ export default function App() {
   const assistantMsgIdRef = useRef<string>('')
   const mountedRef = useRef(true)
 
-  // 组件卸载标记 — 防止 SSE 回调在卸载后 setState
   useEffect(() => {
     mountedRef.current = true
     return () => {
@@ -185,11 +185,11 @@ export default function App() {
         <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-gold text-sm font-bold">星</span>
+              <span className="text-gold text-sm font-bold">{brand.logoText}</span>
             </div>
             <div>
-              <h1 className="text-sm font-semibold text-gray-900">星帆智能客服</h1>
-              <p className="text-xs text-gray-500">Powered by AI · 小星</p>
+              <h1 className="text-sm font-semibold text-gray-900">{brand.brandTitle}</h1>
+              <p className="text-xs text-gray-500">Powered by AI · {brand.agentName}</p>
             </div>
           </div>
 
@@ -262,9 +262,17 @@ export default function App() {
 
       {/* 底部信息 */}
       <footer className="text-center py-3 text-xs text-gray-400 border-t border-gray-100 bg-white">
-        星帆科技 · 智能客服系统 · Conversation: {conversationId}
+        {brand.footerText} · Conversation: {conversationId}
       </footer>
     </div>
+  )
+}
+
+export default function App() {
+  return (
+    <BrandProvider>
+      <AppContent />
+    </BrandProvider>
   )
 }
 

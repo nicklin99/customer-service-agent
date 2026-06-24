@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import type { ChatMessage } from '../api'
 import ChatMessageView from './ChatMessage'
+import { useBrand } from '../context/BrandContext'
 
 interface Props {
   messages: ChatMessage[]
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export default function ChatWidget({ messages, isStreaming, onSend, onStop }: Props) {
+  const brand = useBrand()
   const [input, setInput] = useState('')
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -73,14 +75,14 @@ export default function ChatWidget({ messages, isStreaming, onSend, onStop }: Pr
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="输入您的问题，小星随时为您解答..."
+          placeholder={brand.placeholder}
           rows={2}
           disabled={isStreaming}
           className="w-full px-4 py-3 text-sm resize-none rounded-t-xl focus:outline-none disabled:bg-gray-50 disabled:text-gray-400"
         />
         <div className="flex items-center justify-between px-4 py-2 border-t border-gray-100">
           <span className="text-xs text-gray-400">
-            {isStreaming ? '小星正在输入...' : 'Enter 发送 · Shift+Enter 换行'}
+            {isStreaming ? brand.streamingText : 'Enter 发送 · Shift+Enter 换行'}
           </span>
           <div className="flex gap-2">
             {isStreaming && (

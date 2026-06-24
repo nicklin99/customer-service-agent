@@ -1,26 +1,28 @@
 import { useState, useEffect } from 'react'
 import type { LeadData } from '../api'
 import { getLeads } from '../api'
+import { useBrand } from '../context/BrandContext'
 
 interface Props {
   leadData: LeadData | null
   onUpdate: (data: LeadData) => void
 }
 
-const EMPTY_LEAD: LeadData = {
-  name: '',
-  phone: '',
-  email: '',
-  company: '',
-  position: '',
-  needs: '',
-  source: '智能客服',
-  budget: '',
-  timeline: '',
-}
-
 export default function LeadForm({ leadData, onUpdate }: Props) {
-  const [localLead, setLocalLead] = useState<LeadData>(leadData || EMPTY_LEAD)
+  const brand = useBrand()
+
+  const EMPTY_LEAD: LeadData = {
+    name: '',
+    phone: '',
+    email: '',
+    company: '',
+    position: '',
+    needs: '',
+    source: brand.defaultSource,
+    budget: '',
+    timeline: '',
+  }
+  const [localLead, setLocalLead] = useState<LeadData>(leadData || { ...EMPTY_LEAD })
   const [allLeads, setAllLeads] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
 
@@ -113,7 +115,7 @@ export default function LeadForm({ leadData, onUpdate }: Props) {
 
         <div className="mt-6 p-4 bg-gray-50 rounded-lg">
           <p className="text-xs text-gray-500">
-            💡 提示：客户与小星对话过程中，AI 会自动识别潜在客户并收集以上信息。
+            💡 提示：客户与{brand.agentName}对话过程中，AI 会自动识别潜在客户并收集以上信息。
             您也可以手动填写或编辑。
           </p>
         </div>

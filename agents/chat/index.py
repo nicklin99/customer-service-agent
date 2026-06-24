@@ -18,12 +18,32 @@ logger = logging.getLogger("customer-service-agent")
 # 全局单例
 _agent_state: dict = {}
 
+# ── 品牌配置（从环境变量读取）────────────────────────────────
+
+def _brand_name() -> str:
+    ctx = _agent_state.get("context")
+    if ctx:
+        return ctx.env.get("BRAND_NAME", "trendee")
+    return os.environ.get("BRAND_NAME", "trendee")
+
+def _agent_name() -> str:
+    ctx = _agent_state.get("context")
+    if ctx:
+        return ctx.env.get("AGENT_NAME", "trendee")
+    return os.environ.get("AGENT_NAME", "trendee")
+
+def _default_source() -> str:
+    ctx = _agent_state.get("context")
+    if ctx:
+        return ctx.env.get("DEFAULT_SOURCE", "trendee-智能客服")
+    return os.environ.get("DEFAULT_SOURCE", "trendee-智能客服")
+
 # ── 系统提示词 ────────────────────────────────────────────
 
-SYSTEM_PROMPT = """你是一位专业、热情、自然的智能客服代表，服务于「星帆科技」。你的核心职责是帮助客户解答问题，同时敏锐地识别潜在客户线索，并自然地收集关键信息。
+SYSTEM_PROMPT = f"""你是一位专业、热情、自然的智能客服代表，服务于「{_brand_name()}」。你的核心职责是帮助客户解答问题，同时敏锐地识别潜在客户线索，并自然地收集关键信息。
 
 ## 你的身份
-- 名字：小星
+- 名字：{_agent_name()}
 - 风格：专业但不死板，热情但不油腻，像一位经验丰富的客户顾问
 - 语言：默认使用中文，如果客户使用英文则用英文回复
 
@@ -74,7 +94,7 @@ def collect_lead(
     company: str = "",
     position: str = "",
     needs: str = "",
-    source: str = "智能客服",
+    source: str = _default_source(),
     budget: str = "",
     timeline: str = "",
 ) -> str:
@@ -252,7 +272,7 @@ async def save_to_crm() -> str:
     payload = {
         "lead": lead_data,
         "profile": profile_data,
-        "source": "智能客服-小星",
+        "source": f"{_default_source()}-{_agent_name()}",
         "conversation_id": conversation_id,
     }
 
