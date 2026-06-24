@@ -338,8 +338,8 @@ async def _read_history(state) -> list:
 
 # ── SSE 事件流 ────────────────────────────────────────────
 
-async def _event_stream(agent, message: str, conversation_id: str):
-    """SSE 事件异步生成器。yield 事件 dict，由 stream_sse 自动发送。"""
+async def _event_stream(agent, message: str, conversation_id: str, send):
+    """SSE 事件异步生成器。通过 send() 将 dict 转为 SSE 格式字符串。"""
     config = {"configurable": {"thread_id": conversation_id}}
 
     try:
@@ -353,32 +353,32 @@ async def _event_stream(agent, message: str, conversation_id: str):
             if kind == "on_chat_model_stream":
                 chunk = event["data"]["chunk"]
                 if hasattr(chunk, "content") and chunk.content:
-                    yield {
+                    yield send({
                         "type": "text_delta",
                         "content": chunk.content,
-                    }
+                    })
 
             elif kind == "on_tool_start":
-                yield {
+                yield send({
                     "type": "tool_called",
                     "tool_name": event.get("name", "unknown"),
                     "status": "started",
-                }
+                })
 
             elif kind == "on_tool_end":
                 output = event.get("data", {}).get("output", "")
-                yield {
+                yield send({
                     "type": "tool_result",
                     "tool_name": event.get("name", "unknown"),
                     "status": "completed",
                     "output": str(output)[:500],
-                }
+                })
 
-        yield {"type": "done", "conversation_id": conversation_id}
+        yield send({"type": "done", "conversation_id": conversation_id})
 
     except Exception as e:
         logger.error(f"Agent stream error: {e}")
-        yield {"type": "error", "message": str(e)}
+        yield send({"type": "error", "message": str(e)})
 
 
 # ── 主 Handler ────────────────────────────────────────────
@@ -444,4 +444,10 @@ async def handler(context):
             return {"status_code": 500, "body": {"error": str(e)}}
 
     # chat — SSE 流
-    return context.utils.stream_sse(_event_stream(agent, message, conversation_id))
+    # util.sse 将 dict 转为 SSE 格式字符串，stream_sse 包装为流式响应
+    def send(event: dict) -> object:
+        return context.utils.sse(
+            {k: v for k, v in event.items() if v not in ("", None)}
+        )
+
+    return context.utils.stream_sse(_event_stream(agent, message, conversation_id, send))
