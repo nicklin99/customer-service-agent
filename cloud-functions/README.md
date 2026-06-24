@@ -4,6 +4,18 @@
 
 ---
 
+## 云函数结构
+
+```
+cloud-functions/api/
+├── _utils.ts               # 共享工具函数
+├── profile.ts              # POST /api/profile        — 用户画像查询
+├── leads.ts                # POST /api/leads          — 线索列表/详情
+├── crm-sync.ts             # POST /api/crm-sync       — CRM 同步
+├── settings.ts             # GET  /api/settings       — 品牌配置
+└── wecom-kf-bridge.ts      # GET+POST /api/wecom-kf-bridge — 企微回调
+```
+
 ## 整体架构
 
 ```
@@ -58,7 +70,7 @@
 
 ### 1. 配置环境变量
 
-在 EdgeOne 或部署平台中设置以下环境变量：
+在 EdgeOne Makers 中设置以下环境变量：
 
 ```bash
 # 企业微信凭证
@@ -84,8 +96,8 @@ CRM_API_KEY=your_crm_key
 
 | 位置 | 路径 |
 |------|------|
-| 客户联系 → API → 接收消息 | `https://your-domain.com/wecom-callback` |
-| 微信客服 → 回调配置 | `https://your-domain.com/wecom-callback` |
+| 客户联系 → API → 接收消息 | `https://your-domain.com/api/wecom-kf-bridge` |
+| 微信客服 → 回调配置 | `https://your-domain.com/api/wecom-kf-bridge` |
 
 两个地方的 URL、Token、EncodingAESKey **保持一致**。
 
@@ -98,7 +110,7 @@ CRM_API_KEY=your_crm_key
 ### 4. 生成渠道活码
 
 ```bash
-curl -X POST https://your-domain.com/wecom-callback \
+curl -X POST https://your-domain.com/api/wecom-kf-bridge \
   -H "Content-Type: application/json" \
   -d '{
     "action": "create_qr_code",
