@@ -3,7 +3,7 @@
  * 处理 SSE 流式响应和 REST API 调用
  */
 
-const BASE_URL = ''
+const BASE_URL = '/api'
 
 // ── 类型定义 ────────────────────────────────────
 
@@ -60,7 +60,7 @@ export function streamChat(
 ): AbortController {
   const controller = new AbortController()
 
-  fetch(`${BASE_URL}/chat`, {
+  fetch('/chat', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -117,7 +117,7 @@ export function streamChat(
 // ── 停止生成 ─────────────────────────────────────
 
 export async function stopGeneration(conversationId: string): Promise<void> {
-  await fetch(`${BASE_URL}/stop`, {
+  await fetch('/stop', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

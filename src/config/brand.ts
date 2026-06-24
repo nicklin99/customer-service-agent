@@ -37,7 +37,7 @@ export const defaultBrand: BrandConfig = {
  */
 export async function fetchBrandConfig(): Promise<BrandConfig> {
   try {
-    const resp = await fetch('/settings')
+    const resp = await fetch('/api/settings')
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
     const data = await resp.json()
     // 兼容 EdgeOne Makers 的 body 包装
