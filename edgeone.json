@@ -2,6 +2,10 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "agents": {
-    "framework": "deepagents"
+    "framework": "openai-agents-sdk",
+    "timeout": 300,
+    "sandbox": {
+      "timeout": 300
+    }
   }
 }

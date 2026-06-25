@@ -1,9 +1,11 @@
 /**
- * POST /api/crm-sync — CRM 同步
+ * POST /api/crm/sync — CRM 同步
+ *
+ * { lead, profile, thread_id } → 同步到外部 CRM API
  */
-import { json } from './_utils';
+import { json } from '../_utils';
 
-export async function onRequest(context) {
+export default async function onRequest(context) {
   try {
     const body = await context.request.json();
     const { env } = context;
@@ -24,7 +26,7 @@ export async function onRequest(context) {
       },
       profile: body.profile || {},
       source: body.source || env.DEFAULT_SOURCE || 'trendee-智能客服',
-      conversation_id: body.conversation_id || '',
+      thread_id: body.thread_id || '',
     };
 
     const resp = await fetch(crmEndpoint, {
@@ -44,7 +46,7 @@ export async function onRequest(context) {
 
     return json({ status: 'success', crm_response: await resp.json() });
   } catch (err) {
-    console.error('crm-sync error:', err);
+    console.error('crm sync error:', err);
     return json({ error: err.message }, 500);
   }
 }

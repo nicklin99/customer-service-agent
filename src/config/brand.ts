@@ -11,6 +11,8 @@ export interface BrandConfig {
   welcomeMessage: string
   /** 底部版权文字 */
   footerText: string
+  /** 版本号 */
+  version: string
   /** 线索来源默认值 */
   defaultSource: string
   /** 输入框占位文案 */
@@ -18,6 +20,8 @@ export interface BrandConfig {
   /** 正在输入提示 */
   streamingText: string
 }
+
+declare const __APP_VERSION__: string
 
 export const defaultBrand: BrandConfig = {
   brandName: 'trendee',
@@ -27,6 +31,7 @@ export const defaultBrand: BrandConfig = {
   welcomeMessage:
     '您好！我是 trendee，trendee 的智能顾问 ☀️\n\n请问有什么可以帮您的？',
   footerText: 'trendee · 智能客服系统',
+  version: __APP_VERSION__,
   defaultSource: 'trendee-智能客服',
   placeholder: '输入您的问题，trendee 随时为您解答...',
   streamingText: 'trendee 正在输入...',
@@ -37,7 +42,7 @@ export const defaultBrand: BrandConfig = {
  */
 export async function fetchBrandConfig(): Promise<BrandConfig> {
   try {
-    const resp = await fetch('/api/settings')
+    const resp = await fetch('/api/assistant')
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
     const data = await resp.json()
     // 兼容 EdgeOne Makers 的 body 包装

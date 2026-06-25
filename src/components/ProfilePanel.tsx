@@ -4,7 +4,7 @@ import { useBrand } from '../context/BrandContext'
 interface Props {
   profileData: ProfileData | null
   leadData: LeadData | null
-  conversationId: string
+  threadId: string
   onRefresh: () => void
 }
 
@@ -22,13 +22,13 @@ const URGENCY_COLORS: Record<string, string> = {
   '未知': 'bg-gray-50 text-gray-500 border-gray-200',
 }
 
-export default function ProfilePanel({ profileData, leadData, conversationId, onRefresh }: Props) {
+export default function ProfilePanel({ profileData, leadData, threadId, onRefresh }: Props) {
   const brand = useBrand()
   const profile = profileData
 
   if (!profile && !leadData) {
     return (
-      <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+      <div className="bg-white rounded-xl border border-gray-200 p-12 text-center mx-4">
         <div className="text-4xl mb-4">📊</div>
         <h3 className="text-lg font-semibold text-gray-700 mb-2">暂无用户画像</h3>
         <p className="text-sm text-gray-500 mb-4">
@@ -47,10 +47,8 @@ export default function ProfilePanel({ profileData, leadData, conversationId, on
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      {/* 画像概览 */}
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 px-4 pb-4">
       <div className="lg:col-span-2 space-y-6">
-        {/* 头部卡片 */}
         <div className="bg-white rounded-xl border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-gray-900">📊 用户画像分析</h2>
@@ -64,20 +62,11 @@ export default function ProfilePanel({ profileData, leadData, conversationId, on
 
           {profile ? (
             <div className="space-y-4">
-              {/* 标签行 */}
               <div className="flex flex-wrap gap-2">
-                <span
-                  className={`px-3 py-1 text-xs font-medium rounded-full border ${
-                    LEVEL_COLORS[profile.intent_level] || LEVEL_COLORS['未知']
-                  }`}
-                >
+                <span className={`px-3 py-1 text-xs font-medium rounded-full border ${LEVEL_COLORS[profile.intent_level] || LEVEL_COLORS['未知']}`}>
                   意向: {profile.intent_level}
                 </span>
-                <span
-                  className={`px-3 py-1 text-xs font-medium rounded-full border ${
-                    URGENCY_COLORS[profile.urgency] || URGENCY_COLORS['未知']
-                  }`}
-                >
+                <span className={`px-3 py-1 text-xs font-medium rounded-full border ${URGENCY_COLORS[profile.urgency] || URGENCY_COLORS['未知']}`}>
                   紧急度: {profile.urgency}
                 </span>
                 <span className="px-3 py-1 text-xs font-medium text-gray-600 bg-gray-50 rounded-full border border-gray-200">
@@ -88,21 +77,16 @@ export default function ProfilePanel({ profileData, leadData, conversationId, on
                 </span>
               </div>
 
-              {/* 核心需求 */}
               <div className="p-4 bg-gold/5 border border-gold/20 rounded-lg">
                 <div className="text-xs text-gray-500 mb-1">核心需求</div>
-                <div className="text-sm font-medium text-gray-800">
-                  {profile.primary_need || '待分析'}
-                </div>
+                <div className="text-sm font-medium text-gray-800">{profile.primary_need || '待分析'}</div>
               </div>
 
-              {/* 画像总结 */}
               <div className="p-4 bg-gray-50 rounded-lg">
                 <div className="text-xs text-gray-500 mb-1">画像总结</div>
                 <div className="text-sm text-gray-700">{profile.persona_summary || '待分析'}</div>
               </div>
 
-              {/* 痛点 */}
               {profile.pain_points && profile.pain_points.length > 0 && (
                 <div>
                   <div className="text-xs text-gray-500 mb-2">客户痛点</div>
@@ -117,7 +101,6 @@ export default function ProfilePanel({ profileData, leadData, conversationId, on
                 </div>
               )}
 
-              {/* 关键洞察 */}
               {profile.key_insights && profile.key_insights.length > 0 && (
                 <div>
                   <div className="text-xs text-gray-500 mb-2">关键洞察</div>
@@ -139,16 +122,12 @@ export default function ProfilePanel({ profileData, leadData, conversationId, on
           )}
         </div>
 
-        {/* 推荐服务 */}
         {profile?.recommended_services && profile.recommended_services.length > 0 && (
           <div className="bg-white rounded-xl border border-gray-200 p-6">
             <h3 className="text-sm font-semibold text-gray-900 mb-3">🎯 推荐服务</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {profile.recommended_services.map((service, i) => (
-                <div
-                  key={i}
-                  className="p-3 border border-gold/30 bg-gold/5 rounded-lg text-sm text-gray-700"
-                >
+                <div key={i} className="p-3 border border-gold/30 bg-gold/5 rounded-lg text-sm text-gray-700">
                   {service}
                 </div>
               ))}
@@ -157,7 +136,6 @@ export default function ProfilePanel({ profileData, leadData, conversationId, on
         )}
       </div>
 
-      {/* 右侧：线索摘要 */}
       <div className="space-y-6">
         <div className="bg-white rounded-xl border border-gray-200 p-6">
           <h3 className="text-sm font-semibold text-gray-900 mb-4">👤 客户信息</h3>
@@ -181,9 +159,7 @@ export default function ProfilePanel({ profileData, leadData, conversationId, on
               ))}
             </dl>
           ) : (
-            <div className="text-xs text-gray-400 text-center py-4">
-              暂无线索数据
-            </div>
+            <div className="text-xs text-gray-400 text-center py-4">暂无线索数据</div>
           )}
         </div>
 
@@ -192,18 +168,14 @@ export default function ProfilePanel({ profileData, leadData, conversationId, on
           <div className="text-xs text-gray-500 space-y-2">
             <div className="flex justify-between">
               <span>会话 ID</span>
-              <span className="font-mono text-gray-700">{conversationId.slice(0, 16)}...</span>
+              <span className="font-mono text-gray-700">{threadId.slice(0, 16)}...</span>
             </div>
           </div>
         </div>
 
         <div className="p-4 bg-primary rounded-xl text-white text-xs">
-          <p className="opacity-80 mb-2">
-            💡 画像分析会随着对话深入不断完善。
-          </p>
-          <p className="opacity-60">
-            建议引导客户多描述具体需求和场景，AI 将获得更精准的分析结果。
-          </p>
+          <p className="opacity-80 mb-2">💡 画像分析会随着对话深入不断完善。</p>
+          <p className="opacity-60">建议引导客户多描述具体需求和场景，AI 将获得更精准的分析结果。</p>
         </div>
       </div>
     </div>

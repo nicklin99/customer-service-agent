@@ -18,7 +18,7 @@ export function BrandProvider({ children }: { children: ReactNode }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-sm text-gray-400">加载中...</div>
       </div>
     )

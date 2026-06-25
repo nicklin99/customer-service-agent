@@ -1,15 +1,17 @@
 import { useState, useEffect } from 'react'
 import type { LeadData } from '../api'
-import { getLeads } from '../api'
+import { getLead, saveLead } from '../api'
 import { useBrand } from '../context/BrandContext'
 
 interface Props {
+  threadId: string
   leadData: LeadData | null
   onUpdate: (data: LeadData) => void
 }
 
-export default function LeadForm({ leadData, onUpdate }: Props) {
+export default function LeadForm({ threadId, leadData, onUpdate }: Props) {
   const brand = useBrand()
+  const [saving, setSaving] = useState(false)
 
   const EMPTY_LEAD: LeadData = {
     name: '',
@@ -23,8 +25,6 @@ export default function LeadForm({ leadData, onUpdate }: Props) {
     timeline: '',
   }
   const [localLead, setLocalLead] = useState<LeadData>(leadData || { ...EMPTY_LEAD })
-  const [allLeads, setAllLeads] = useState<any[]>([])
-  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     if (leadData) {
@@ -32,26 +32,21 @@ export default function LeadForm({ leadData, onUpdate }: Props) {
     }
   }, [leadData])
 
-  useEffect(() => {
-    loadLeads()
-  }, [])
-
-  const loadLeads = async () => {
-    setLoading(true)
-    try {
-      const leads = await getLeads()
-      setAllLeads(leads)
-    } catch {
-      // ignore
-    } finally {
-      setLoading(false)
-    }
-  }
-
   const handleChange = (field: keyof LeadData, value: string) => {
     const updated = { ...localLead, [field]: value }
     setLocalLead(updated)
     onUpdate(updated)
+  }
+
+  const handleSave = async () => {
+    setSaving(true)
+    try {
+      await saveLead(threadId, localLead)
+    } catch {
+      // ignore
+    } finally {
+      setSaving(false)
+    }
   }
 
   const leadComplete =
@@ -69,20 +64,22 @@ export default function LeadForm({ leadData, onUpdate }: Props) {
   ]
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      {/* 左侧：线索表单 */}
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 px-4 pb-4">
+      {/* 线索表单 */}
       <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-semibold text-gray-900">📋 客户线索</h2>
-          {leadComplete ? (
-            <span className="px-2 py-1 text-xs font-medium text-green-700 bg-green-50 rounded-full border border-green-200">
-              ✓ 信息完整
-            </span>
-          ) : (
-            <span className="px-2 py-1 text-xs font-medium text-orange-700 bg-orange-50 rounded-full border border-orange-200">
-              待补充
-            </span>
-          )}
+          <div className="flex items-center gap-3">
+            {leadComplete ? (
+              <span className="px-2 py-1 text-xs font-medium text-green-700 bg-green-50 rounded-full border border-green-200">
+                ✓ 信息完整
+              </span>
+            ) : (
+              <span className="px-2 py-1 text-xs font-medium text-orange-700 bg-orange-50 rounded-full border border-orange-200">
+                待补充
+              </span>
+            )}
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -113,44 +110,54 @@ export default function LeadForm({ leadData, onUpdate }: Props) {
           ))}
         </div>
 
-        <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+        <div className="mt-6 flex items-center justify-between">
           <p className="text-xs text-gray-500">
-            💡 提示：客户与{brand.agentName}对话过程中，AI 会自动识别潜在客户并收集以上信息。
-            您也可以手动填写或编辑。
+            💡 数据保存后可在下次打开时自动恢复
           </p>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="px-5 py-1.5 text-xs font-medium text-white bg-primary rounded-lg hover:bg-primary-light disabled:opacity-40 transition-all"
+          >
+            {saving ? '保存中...' : '保存线索'}
+          </button>
         </div>
       </div>
 
-      {/* 右侧：历史线索列表 */}
+      {/* 右侧：当前线索摘要 */}
       <div className="bg-white rounded-xl border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">📝 历史线索</h2>
-
-        {loading ? (
-          <div className="text-sm text-gray-400 text-center py-8">加载中...</div>
-        ) : allLeads.length === 0 ? (
-          <div className="text-sm text-gray-400 text-center py-8">
-            暂无历史线索
-            <br />
-            <span className="text-xs">对话中收集的线索会出现在这里</span>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">📋 当前线索</h2>
+        {localLead.name ? (
+          <div className="space-y-3">
+            <div>
+              <div className="text-sm font-medium text-gray-800">{localLead.name}</div>
+              <div className="text-xs text-gray-500 mt-0.5">
+                {localLead.company || '未填公司'}
+                {localLead.position ? ` · ${localLead.position}` : ''}
+              </div>
+            </div>
+            {localLead.phone && (
+              <div className="text-xs text-gray-500">📞 {localLead.phone}</div>
+            )}
+            {localLead.email && (
+              <div className="text-xs text-gray-500">✉️ {localLead.email}</div>
+            )}
+            {localLead.needs && (
+              <div className="text-xs text-gray-500">
+                📝 {localLead.needs.slice(0, 60)}{localLead.needs.length > 60 ? '...' : ''}
+              </div>
+            )}
+            {localLead.updated_at && (
+              <div className="text-[10px] text-gray-400 pt-2 border-t border-gray-100">
+                上次更新：{new Date(localLead.updated_at).toLocaleString('zh-CN')}
+              </div>
+            )}
           </div>
         ) : (
-          <div className="space-y-3 max-h-96 overflow-y-auto">
-            {allLeads.map((item, i) => (
-              <div
-                key={item.conversation_id || i}
-                className="p-3 border border-gray-100 rounded-lg hover:border-gold/30 transition-colors cursor-pointer"
-              >
-                <div className="text-sm font-medium text-gray-800">
-                  {item.lead?.name || '未知'}
-                </div>
-                <div className="text-xs text-gray-500 mt-1">
-                  {item.lead?.company || '未填公司'} · {item.lead?.needs?.slice(0, 30) || '暂无需求'}
-                </div>
-                <div className="text-[10px] text-gray-400 mt-1">
-                  {item.updated_at || ''}
-                </div>
-              </div>
-            ))}
+          <div className="text-sm text-gray-400 text-center py-8">
+            暂无线索信息
+            <br />
+            <span className="text-xs">填写表单后保存</span>
           </div>
         )}
       </div>

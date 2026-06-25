@@ -117,17 +117,34 @@
 //   }, 1000);
 
   // ─── Toggle ──────────────────────────────────────────────────────────────
+  function openWidget() {
+    isOpen = true;
+    frame.classList.add('open');
+    bubble.innerHTML = closeIcon;
+  }
+
+  function closeWidget() {
+    isOpen = false;
+    frame.classList.remove('open');
+    bubble.innerHTML = chatIcon;
+  }
+
   var isOpen = false;
   bubble.addEventListener('click', function () {
-    isOpen = !isOpen;
-    frame.classList.toggle('open', isOpen);
-    bubble.innerHTML = isOpen ? closeIcon : chatIcon;
-    if (isOpen && !contextSent) {
-    //   frame.contentWindow.postMessage({
-    //     type: '__aa_page_context',
-    //     payload: getPageContext()
-    //   }, origin);
-      contextSent = true;
+    if (isOpen) {
+      closeWidget();
+    } else {
+      openWidget();
+      if (!contextSent) {
+        contextSent = true;
+      }
+    }
+  });
+
+  // Listen for minimize message from iframe
+  window.addEventListener('message', function (e) {
+    if (e.data && e.data.type === '__aa_minimize') {
+      closeWidget();
     }
   });
 })();

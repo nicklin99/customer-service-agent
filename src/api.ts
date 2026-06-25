@@ -10,7 +10,8 @@ const BASE_URL = '/api'
 export interface ChatMessage {
   id: string
   role: 'user' | 'assistant' | 'system' | 'tool'
-  content: string
+  /** 可以是纯文本字符串，也可以是 Store API 返回的对象格式 */
+  content: string | Record<string, any>
   toolName?: string
   timestamp: number
 }
@@ -46,14 +47,14 @@ export interface SSEEvent {
   status?: string
   output?: string
   message?: string
-  conversation_id?: string
+  thread_id?: string
 }
 
 // ── SSE 流式聊天 ─────────────────────────────────
 
 export function streamChat(
   message: string,
-  conversationId: string,
+  threadId: string,
   onEvent: (event: SSEEvent) => void,
   onDone: () => void,
   onError: (error: Error) => void,
@@ -64,7 +65,7 @@ export function streamChat(
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'makers-conversation-id': conversationId,
+      'makers-conversation-id': threadId,
     },
     body: JSON.stringify({ message, action: 'chat' }),
     signal: controller.signal,
@@ -116,12 +117,12 @@ export function streamChat(
 
 // ── 停止生成 ─────────────────────────────────────
 
-export async function stopGeneration(conversationId: string): Promise<void> {
+export async function stopGeneration(threadId: string): Promise<void> {
   await fetch('/stop', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'makers-conversation-id': conversationId,
+      'makers-conversation-id': threadId,
     },
     body: JSON.stringify({}),
   })
@@ -129,43 +130,47 @@ export async function stopGeneration(conversationId: string): Promise<void> {
 
 // ── 获取对话历史 ─────────────────────────────────
 
-export async function getHistory(conversationId: string): Promise<ChatMessage[]> {
-  const resp = await fetch(`${BASE_URL}/chat`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'makers-conversation-id': conversationId,
-    },
-    body: JSON.stringify({ action: 'history' }),
+export async function getHistory(threadId: string): Promise<ChatMessage[]> {
+  const resp = await fetch(`${BASE_URL}/thread/message?thread_id=${encodeURIComponent(threadId)}`, {
+    method: 'GET',
+    headers: { 'Content-Type': 'application/json' },
   })
   const data = await resp.json()
   const body = data.body || data
   return body.messages || []
 }
 
-// ── 查询线索 ─────────────────────────────────────
+// ── 线索 CRUD（表单数据存储） ──────────────────────
 
-export async function getLeads(): Promise<any[]> {
-  const resp = await fetch(`${BASE_URL}/leads`, {
+export async function getLead(threadId: string): Promise<LeadData | null> {
+  const resp = await fetch(`${BASE_URL}/crm/leads`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: 'list' }),
+    body: JSON.stringify({ thread_id: threadId }),
   })
   const data = await resp.json()
   const body = data.body || data
-  return body.leads || []
+  return body.lead || null
+}
+
+export async function saveLead(threadId: string, lead: LeadData): Promise<void> {
+  await fetch(`${BASE_URL}/crm/leads`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ thread_id: threadId, lead }),
+  })
 }
 
 // ── 查询用户画像 ─────────────────────────────────
 
-export async function getProfile(conversationId: string): Promise<{
+export async function getProfile(threadId: string): Promise<{
   profile: ProfileData | null
   summary: any
 }> {
-  const resp = await fetch(`${BASE_URL}/profile`, {
+  const resp = await fetch(`${BASE_URL}/crm/profile`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ conversation_id: conversationId }),
+    body: JSON.stringify({ thread_id: threadId }),
   })
   const data = await resp.json()
   return data.body || data
@@ -173,6 +178,6 @@ export async function getProfile(conversationId: string): Promise<{
 
 // ── 工具函数 ─────────────────────────────────────
 
-export function generateConversationId(): string {
-  return `conv_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+export function generateThreadId(): string {
+  return `thread_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
 }

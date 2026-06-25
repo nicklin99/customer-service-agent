@@ -42,9 +42,9 @@ export default function ChatWidget({ messages, isStreaming, onSend, onStop }: Pr
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-12rem)]">
+    <div className="flex flex-col min-h-0 flex-1">
       {/* 消息列表 */}
-      <div className="flex-1 overflow-y-auto space-y-4 pb-4">
+      <div className="flex-1 overflow-y-auto space-y-4 pb-4 px-4">
         {messages.map((msg) => (
           <ChatMessageView key={msg.id} message={msg} />
         ))}
@@ -54,7 +54,7 @@ export default function ChatWidget({ messages, isStreaming, onSend, onStop }: Pr
       {/* 快捷引导（预留） */}
 
       {/* 输入区 */}
-      <div className="border border-gray-200 rounded-xl bg-white shadow-sm">
+      <div className="border border-gray-200 rounded-xl bg-white shadow-sm mx-4">
         <textarea
           ref={inputRef}
           value={input}
