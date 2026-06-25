@@ -19,10 +19,10 @@ type Panel = 'chat' | 'lead' | 'profile'
 function AppContent() {
   const brand = useBrand()
   const [conversationId] = useState(() => {
-    const saved = sessionStorage.getItem('cs_conversation_id')
+    const saved = localStorage.getItem('cs_conversation_id')
     if (saved) return saved
     const id = generateConversationId()
-    sessionStorage.setItem('cs_conversation_id', id)
+    localStorage.setItem('cs_conversation_id', id)
     return id
   })
 

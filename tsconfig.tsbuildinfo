@@ -1,1 +1,1 @@
-{"root":["./src/app.tsx","./src/api.ts","./src/main.tsx","./src/components/chatmessage.tsx","./src/components/chatwidget.tsx","./src/components/leadform.tsx","./src/components/profilepanel.tsx","./src/config/brand.ts","./src/context/brandcontext.tsx"],"version":"5.9.3"}
+{"root":["./src/app.tsx","./src/api.ts","./src/main.tsx","./src/components/aisparkle.tsx","./src/components/chatmessage.tsx","./src/components/chatwidget.tsx","./src/components/leadform.tsx","./src/components/profilepanel.tsx","./src/config/brand.ts","./src/context/brandcontext.tsx"],"version":"5.9.3"}

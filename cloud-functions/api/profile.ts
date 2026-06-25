@@ -9,11 +9,15 @@ export async function onRequest(context) {
     const conversationId = body.conversation_id;
     if (!conversationId) return json({ error: '缺少 conversation_id' }, 400);
 
+    console.log(`conversationId: ${conversationId}`)
+
     const messages = await context.agent.store.getMessages({
       conversationId,
       limit: 100,
       order: 'asc',
     });
+
+    console.log(`getMessages: ${messages}`)
 
     if (!messages || messages.length === 0) {
       return json({ profile: null, message: '该会话暂无消息记录' });
