@@ -1,0 +1,15 @@
+COMMIT_MSG=$(cat "$1")
+
+if echo "$COMMIT_MSG" | grep -q "BREAKING CHANGE"; then
+  TYPE=major
+elif echo "$COMMIT_MSG" | grep -q "^feat"; then
+  TYPE=minor
+elif echo "$COMMIT_MSG" | grep -q "^fix"; then
+  TYPE=patch
+else
+  exit 0
+fi
+
+npm version "$TYPE" --no-git-tag-version
+git add package.json package-lock.json
+echo "🚀 自动升级版本 ($TYPE)"
