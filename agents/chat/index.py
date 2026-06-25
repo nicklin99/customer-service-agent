@@ -408,14 +408,14 @@ async def handler(context):
         streaming=True,
     )
 
-    checkpointer = context.store.langgraph_checkpointer
+    # checkpointer = context.store.langgraph_checkpointer
     config = {"configurable": {"thread_id": conversation_id}}
 
     agent = create_deep_agent(
         model=model,
         system_prompt=SYSTEM_PROMPT,
         tools=[collect_lead, analyze_user_profile, save_to_crm],
-        checkpointer=checkpointer,
+        # checkpointer=checkpointer,
     )
 
     # 存储状态供工具使用
